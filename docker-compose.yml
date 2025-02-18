@@ -1,0 +1,50 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbit_hostname
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    ports:
+      - "4369:4369"
+      - "5671:5671"
+      - "5672:5672"
+      - "15671:15671"
+      - "15691-15692:15691-15692"
+      - "25672:25672"
+      - "15672:15672"
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: main
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+
+  flower:
+    image: mher/flower
+    environment:
+      FLOWER_PERSISTENT: True
+      FLOWER_DB: /etc/db/flower.db
+    depends_on:
+      - rabbitmq
+    command: celery --broker=amqp://user:password@rabbit_hostname:5672// flower --basic-auth=some_user:some_password
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./flower/storage:/etc/db/
+
+  nginx:
+    build:
+      context: ./nginx/
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - rabbitmq
+      - flower
+      - postgres
+
