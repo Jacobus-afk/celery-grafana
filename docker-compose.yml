@@ -7,13 +7,13 @@ services:
       RABBITMQ_DEFAULT_USER: user
       RABBITMQ_DEFAULT_PASS: password
     ports:
-      - "4369:4369"
-      - "5671:5671"
-      - "5672:5672"
-      - "15671:15671"
-      - "15691-15692:15691-15692"
-      - "25672:25672"
-      - "15672:15672"
+      - 4369:4369
+      - 5671:5671
+      - 5672:5672
+      - 15671:15671
+      - 15691-15692:15691-15692
+      - 25672:25672
+      - 15672:15672
 
   postgres:
     image: postgres:latest
@@ -22,7 +22,7 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
     ports:
-      - "5432:5432"
+      - 5432:5432
 
   flower:
     image: mher/flower
@@ -33,18 +33,37 @@ services:
       - rabbitmq
     command: celery --broker=amqp://user:password@rabbit_hostname:5672// flower --basic-auth=some_user:some_password
     ports:
-      - "5555:5555"
+      - 5555:5555
     volumes:
       - ./flower/storage:/etc/db/
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    user: "1000"
+    volumes:
+      - ./grafana_storage:/var/lib/grafana
 
   nginx:
     build:
       context: ./nginx/
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - 80:80
     depends_on:
       - rabbitmq
       - flower
       - postgres
+      - prometheus
+      - grafana
 
